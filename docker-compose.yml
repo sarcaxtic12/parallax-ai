@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: parallax-db
+    environment:
+      POSTGRES_USER: parallax_user
+      POSTGRES_PASSWORD: parallax_pass
+      POSTGRES_DB: parallax_core
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U parallax_user -d parallax_core" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - parallax-net
+
+  go-scraper:
+    build:
+      context: ./go-scraper
+    ports:
+      - "8080:8080"
+    networks:
+      - parallax-net
+
+  py-agent:
+    build:
+      context: ./py-agent
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://parallax_user:parallax_pass@db:5432/parallax_core
+      GO_SCRAPER_URL: http://go-scraper:8080/scrape
+    depends_on:
+      db:
+        condition: service_healthy
+      go-scraper:
+        condition: service_started
+    command: uvicorn api:app --host 0.0.0.0 --port 8000
+    networks:
+      - parallax-net
+
+  frontend:
+    build:
+      context: ./parallax-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://py-agent:8000
+    depends_on:
+      - py-agent
+    networks:
+      - parallax-net
+
+networks:
+  parallax-net:
+    driver: bridge

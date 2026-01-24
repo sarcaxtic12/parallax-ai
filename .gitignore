@@ -1,0 +1,54 @@
+# --- Global / OS / IDE ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.log
+.env
+.env*.local
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+.venv/
+.pytest_cache/
+coverage/
+.coverage
+
+# --- Node.js / Frontend ---
+node_modules/
+.next/
+out/
+build/
+dist/
+.npm/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Go ---
+# Binaries
+*.exe
+*.test
+*.prof
+vendor/
+
+# --- Database ---
+postgres-data/
+*.sql
+*.db
+*.sqlite3
+
+# --- Project Specific ---
+API Keys.txt
+parallax-ai-frontend
+parallax-ai-py-agent
+parallax-ai-go-scraper
+server
+

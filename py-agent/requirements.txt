@@ -1,0 +1,13 @@
+streamlit
+langchain
+langchain-groq
+pydantic
+requests
+pandas
+plotly
+python-dotenv
+sqlalchemy
+psycopg2-binary
+google-search-results
+fastapi
+uvicorn[standard]

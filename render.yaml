@@ -1,0 +1,57 @@
+services:
+  # 1. The Python Agent (Streamlit Frontend + Logic)
+  - type: web
+    name: parallax-agent
+    env: docker
+    dockerContext: ./py-agent
+    dockerfilePath: ./py-agent/Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: GO_SCRAPER_URL
+        fromService:
+          type: web
+          name: parallax-scraper
+          property: url
+      - key: DATABASE_URL
+        fromDatabase:
+          name: parallax-db
+          property: connectionString
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SERP_API_KEY
+        sync: false
+
+  # 2. The Go Scraper (Backend Service)
+  - type: web
+    name: parallax-scraper
+    env: docker
+    dockerContext: ./go-scraper
+    dockerfilePath: ./go-scraper/Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+
+  # 3. Next.js Frontend
+  - type: web
+    name: parallax
+    env: docker
+    dockerContext: ./parallax-frontend
+    dockerfilePath: ./parallax-frontend/Dockerfile
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: parallax-agent
+          property: url
+
+databases:
+  # 4. Managed Postgres Database
+  - name: parallax-db
+    databaseName: parallax_core
+    user: parallax_user
+    plan: free
+    ipAllowList: [] # Allow all internal connections
