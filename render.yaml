@@ -1,20 +1,17 @@
 services:
   # 1. The Python Agent (UI + Logic)
-  # This is the one you will click on to use the app.
   - type: web
     name: parallax-agent
     runtime: docker
-    rootDir: py-agent          # LOOK HERE: We tell it to go into the python folder
-    dockerfilePath: Dockerfile # And find the file named Dockerfile
+    rootDir: py-agent
+    dockerfilePath: Dockerfile
     plan: free
     envVars:
       - key: PORT
         value: 8501
+      # We use the internal service name and port here
       - key: GO_SCRAPER_URL
-        fromService:
-          type: web
-          name: parallax-scraper
-          property: url
+        value: http://parallax-scraper:8080/scrape
       - key: DATABASE_URL
         fromDatabase:
           name: parallax-db
@@ -25,11 +22,10 @@ services:
         sync: false
 
   # 2. The Go Scraper (Backend Helper)
-  # You never visit this URL. The Python agent visits it for you.
   - type: web
     name: parallax-scraper
     runtime: docker
-    rootDir: go-scraper        # LOOK HERE: We tell it to go into the go folder
+    rootDir: go-scraper
     dockerfilePath: Dockerfile
     plan: free
     envVars:
