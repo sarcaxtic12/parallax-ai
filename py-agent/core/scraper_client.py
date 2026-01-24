@@ -4,7 +4,13 @@ from typing import List, Dict, Any
 
 GO_SCRAPER_HOST = os.getenv("GO_SCRAPER_HOST", "localhost")
 GO_SCRAPER_PORT = os.getenv("GO_SCRAPER_PORT", "8080")
-GO_SCRAPER_URL = os.getenv("GO_SCRAPER_URL", f"http://{GO_SCRAPER_HOST}:{GO_SCRAPER_PORT}/scrape")
+
+# On Render, the host includes the full domain (e.g., parallax-scraper-xxxx.onrender.com)
+# and requires HTTPS. Locally, we use HTTP with the configured port.
+if "onrender.com" in GO_SCRAPER_HOST:
+    GO_SCRAPER_URL = os.getenv("GO_SCRAPER_URL", f"https://{GO_SCRAPER_HOST}/scrape")
+else:
+    GO_SCRAPER_URL = os.getenv("GO_SCRAPER_URL", f"http://{GO_SCRAPER_HOST}:{GO_SCRAPER_PORT}/scrape")
 
 def fetch_articles(urls: List[str]) -> List[Dict[str, Any]]:
     """
