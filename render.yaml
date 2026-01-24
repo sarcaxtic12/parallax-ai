@@ -1,5 +1,16 @@
 services:
-  # 1. The Python Agent (UI + Logic)
+  # 1. The Go Scraper (High-speed Helper)
+  - type: web
+    name: parallax-scraper
+    runtime: docker
+    rootDir: go-scraper
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+
+  # 2. The Python Agent (The Brain & API)
   - type: web
     name: parallax-agent
     runtime: docker
@@ -8,8 +19,7 @@ services:
     plan: free
     envVars:
       - key: PORT
-        value: 8501
-      # We use the internal service name and port here
+        value: 8000  # FIXED: Matches your logs
       - key: GO_SCRAPER_URL
         value: http://parallax-scraper:8080/scrape
       - key: DATABASE_URL
@@ -21,19 +31,22 @@ services:
       - key: SERP_API_KEY
         sync: false
 
-  # 2. The Go Scraper (Backend Helper)
+  # 3. The Pretty Frontend (Next.js / Liquid Glass UI)
   - type: web
-    name: parallax-scraper
+    name: parallax-frontend
     runtime: docker
-    rootDir: go-scraper
+    rootDir: parallax-frontend
     dockerfilePath: Dockerfile
     plan: free
     envVars:
-      - key: PORT
-        value: 8080
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: parallax-agent
+          property: url
 
 databases:
-  # 3. The Memory
+  # 4. The Database (Memory)
   - name: parallax-db
     databaseName: parallax_core
     user: parallax_user
