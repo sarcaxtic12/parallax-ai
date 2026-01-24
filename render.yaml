@@ -1,5 +1,7 @@
 services:
-  # 1. The Go Scraper (High-speed Helper)
+  # -------------------------------------------------------
+  # 1. THE GO SCRAPER (Backend Service)
+  # -------------------------------------------------------
   - type: web
     name: parallax-scraper
     runtime: docker
@@ -10,28 +12,36 @@ services:
       - key: PORT
         value: 8080
 
-  # 2. The Python Agent (The Brain & API)
+  # -------------------------------------------------------
+  # 2. THE PYTHON AGENT (Logic & API)
+  # -------------------------------------------------------
   - type: web
     name: parallax-agent
     runtime: docker
     rootDir: py-agent
     dockerfilePath: Dockerfile
     plan: free
+    # Health check ensures Render knows when it's ready
+    healthCheckPath: /healthz 
     envVars:
       - key: PORT
-        value: 8000  # FIXED: Matches your logs
+        value: 8000  # Matches your Uvicorn logs
+      # INTERNAL CONNECTION: Talks to Go Scraper privately
       - key: GO_SCRAPER_URL
         value: http://parallax-scraper:8080/scrape
       - key: DATABASE_URL
         fromDatabase:
           name: parallax-db
           property: connectionString
+      # You must paste these values in the dashboard when prompted
       - key: GROQ_API_KEY
         sync: false
       - key: SERP_API_KEY
         sync: false
 
-  # 3. The Pretty Frontend (Next.js / Liquid Glass UI)
+  # -------------------------------------------------------
+  # 3. THE FRONTEND (Next.js / Liquid UI)
+  # -------------------------------------------------------
   - type: web
     name: parallax-frontend
     runtime: docker
@@ -39,14 +49,16 @@ services:
     dockerfilePath: Dockerfile
     plan: free
     envVars:
+      - key: PORT
+        value: 3000
+      # INTERNAL CONNECTION: Talks to Python Agent privately for Server-Side Rendering
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: parallax-agent
-          property: url
+        value: http://parallax-agent:8000
 
 databases:
-  # 4. The Database (Memory)
+  # -------------------------------------------------------
+  # 4. THE DATABASE (PostgreSQL)
+  # -------------------------------------------------------
   - name: parallax-db
     databaseName: parallax_core
     user: parallax_user
