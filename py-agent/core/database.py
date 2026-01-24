@@ -24,6 +24,11 @@ def get_db_engine():
     if not db_url:
         # Fallback for local run
         db_url = "postgresql://parallax_user:parallax_pass@localhost:5432/parallax_core"
+    
+    # Fix for Render/Heroku postgres:// schema if necessary for SQLAlchemy 1.4+
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+
     return create_engine(db_url)
 
 def init_db():
