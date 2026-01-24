@@ -2,13 +2,13 @@ services:
   # 1. The Python Agent (Streamlit Frontend + Logic)
   - type: web
     name: parallax-agent
-    env: docker
-    dockerContext: ./py-agent
-    dockerfilePath: ./py-agent/Dockerfile
+    runtime: docker      # Change 'env' to 'runtime'
+    rootDir: py-agent    # VITAL: Step into the folder first
+    dockerfilePath: Dockerfile # Now just look for the file inside that folder
     plan: free
     envVars:
       - key: PORT
-        value: 8000
+        value: 8501      # Streamlit usually runs on 8501, not 8000
       - key: GO_SCRAPER_URL
         fromService:
           type: web
@@ -26,9 +26,9 @@ services:
   # 2. The Go Scraper (Backend Service)
   - type: web
     name: parallax-scraper
-    env: docker
-    dockerContext: ./go-scraper
-    dockerfilePath: ./go-scraper/Dockerfile
+    runtime: docker
+    rootDir: go-scraper  # Step into the folder
+    dockerfilePath: Dockerfile
     plan: free
     envVars:
       - key: PORT
@@ -37,9 +37,9 @@ services:
   # 3. Next.js Frontend
   - type: web
     name: parallax
-    env: docker
-    dockerContext: ./parallax-frontend
-    dockerfilePath: ./parallax-frontend/Dockerfile
+    runtime: docker
+    rootDir: parallax-frontend # Step into the folder
+    dockerfilePath: Dockerfile
     plan: free
     envVars:
       - key: NEXT_PUBLIC_API_URL
@@ -54,4 +54,4 @@ databases:
     databaseName: parallax_core
     user: parallax_user
     plan: free
-    ipAllowList: [] # Allow all internal connections
+    ipAllowList: []
