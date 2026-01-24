@@ -1,13 +1,11 @@
 services:
-  # 1. The Python Agent
+  # 1. The Python Agent (UI + Logic)
+  # This is the one you will click on to use the app.
   - type: web
     name: parallax-agent
     runtime: docker
-    # Do NOT use rootDir. Stay at the repo root.
-    # Point explicitly to the file:
-    dockerfilePath: py-agent/Dockerfile
-    # Tell Docker to only look inside the py-agent folder for code:
-    dockerContext: py-agent
+    rootDir: py-agent          # LOOK HERE: We tell it to go into the python folder
+    dockerfilePath: Dockerfile # And find the file named Dockerfile
     plan: free
     envVars:
       - key: PORT
@@ -26,32 +24,20 @@ services:
       - key: SERP_API_KEY
         sync: false
 
-  # 2. The Go Scraper
+  # 2. The Go Scraper (Backend Helper)
+  # You never visit this URL. The Python agent visits it for you.
   - type: web
     name: parallax-scraper
     runtime: docker
-    dockerfilePath: go-scraper/Dockerfile
-    dockerContext: go-scraper
+    rootDir: go-scraper        # LOOK HERE: We tell it to go into the go folder
+    dockerfilePath: Dockerfile
     plan: free
     envVars:
       - key: PORT
         value: 8080
 
-  # 3. Next.js Frontend
-  - type: web
-    name: parallax
-    runtime: docker
-    dockerfilePath: parallax-frontend/Dockerfile
-    dockerContext: parallax-frontend
-    plan: free
-    envVars:
-      - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: parallax-agent
-          property: url
-
 databases:
+  # 3. The Memory
   - name: parallax-db
     databaseName: parallax_core
     user: parallax_user
