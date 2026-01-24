@@ -1,14 +1,17 @@
 services:
-  # 1. The Python Agent (Streamlit Frontend + Logic)
+  # 1. The Python Agent
   - type: web
     name: parallax-agent
-    runtime: docker      # Change 'env' to 'runtime'
-    rootDir: py-agent    # VITAL: Step into the folder first
-    dockerfilePath: Dockerfile # Now just look for the file inside that folder
+    runtime: docker
+    # Do NOT use rootDir. Stay at the repo root.
+    # Point explicitly to the file:
+    dockerfilePath: py-agent/Dockerfile
+    # Tell Docker to only look inside the py-agent folder for code:
+    dockerContext: py-agent
     plan: free
     envVars:
       - key: PORT
-        value: 8501      # Streamlit usually runs on 8501, not 8000
+        value: 8501
       - key: GO_SCRAPER_URL
         fromService:
           type: web
@@ -23,12 +26,12 @@ services:
       - key: SERP_API_KEY
         sync: false
 
-  # 2. The Go Scraper (Backend Service)
+  # 2. The Go Scraper
   - type: web
     name: parallax-scraper
     runtime: docker
-    rootDir: go-scraper  # Step into the folder
-    dockerfilePath: Dockerfile
+    dockerfilePath: go-scraper/Dockerfile
+    dockerContext: go-scraper
     plan: free
     envVars:
       - key: PORT
@@ -38,8 +41,8 @@ services:
   - type: web
     name: parallax
     runtime: docker
-    rootDir: parallax-frontend # Step into the folder
-    dockerfilePath: Dockerfile
+    dockerfilePath: parallax-frontend/Dockerfile
+    dockerContext: parallax-frontend
     plan: free
     envVars:
       - key: NEXT_PUBLIC_API_URL
@@ -49,7 +52,6 @@ services:
           property: url
 
 databases:
-  # 4. Managed Postgres Database
   - name: parallax-db
     databaseName: parallax_core
     user: parallax_user
