@@ -1,66 +1,57 @@
 services:
-  # -------------------------------------------------------
-  # 1. THE GO SCRAPER (Backend Service)
-  # -------------------------------------------------------
-  - type: web
-    name: parallax-scraper
-    runtime: docker
-    rootDir: go-scraper
-    dockerfilePath: Dockerfile
-    plan: free
-    envVars:
-      - key: PORT
-        value: 8080
-
-  # -------------------------------------------------------
-  # 2. THE PYTHON AGENT (Logic & API)
-  # -------------------------------------------------------
+  # 1. The Python Agent (Streamlit Frontend + Logic)
   - type: web
     name: parallax-agent
-    runtime: docker
-    rootDir: py-agent
-    dockerfilePath: Dockerfile
+    env: docker
+    dockerContext: ./py-agent
+    dockerfilePath: ./py-agent/Dockerfile
     plan: free
-    # Health check ensures Render knows when it's ready
-    healthCheckPath: /healthz 
     envVars:
       - key: PORT
-        value: 8000  # Matches your Uvicorn logs
-      # INTERNAL CONNECTION: Talks to Go Scraper privately
+        value: 8000
       - key: GO_SCRAPER_URL
-        value: http://parallax-scraper:8080/scrape
+        fromService:
+          type: web
+          name: parallax-scraper
+          property: url
       - key: DATABASE_URL
         fromDatabase:
           name: parallax-db
           property: connectionString
-      # You must paste these values in the dashboard when prompted
       - key: GROQ_API_KEY
         sync: false
       - key: SERP_API_KEY
         sync: false
 
-  # -------------------------------------------------------
-  # 3. THE FRONTEND (Next.js / Liquid UI)
-  # -------------------------------------------------------
+  # 2. The Go Scraper (Backend Service)
   - type: web
-    name: parallax-frontend
-    runtime: docker
-    rootDir: parallax-frontend
-    dockerfilePath: Dockerfile
+    name: parallax-scraper
+    env: docker
+    dockerContext: ./go-scraper
+    dockerfilePath: ./go-scraper/Dockerfile
     plan: free
     envVars:
       - key: PORT
-        value: 3000
-      # INTERNAL CONNECTION: Talks to Python Agent privately for Server-Side Rendering
+        value: 8080
+
+  # 3. Next.js Frontend
+  - type: web
+    name: parallax
+    env: docker
+    dockerContext: ./parallax-frontend
+    dockerfilePath: ./parallax-frontend/Dockerfile
+    plan: free
+    envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: http://parallax-agent:8000
+        fromService:
+          type: web
+          name: parallax-agent
+          property: url
 
 databases:
-  # -------------------------------------------------------
-  # 4. THE DATABASE (PostgreSQL)
-  # -------------------------------------------------------
+  # 4. Managed Postgres Database
   - name: parallax-db
     databaseName: parallax_core
     user: parallax_user
     plan: free
-    ipAllowList: []
+    ipAllowList: [] # Allow all internal connections
