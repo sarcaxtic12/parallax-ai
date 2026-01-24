@@ -9,22 +9,35 @@ GO_SCRAPER_URL = os.getenv("GO_SCRAPER_URL", f"http://{GO_SCRAPER_HOST}:{GO_SCRA
 def fetch_articles(urls: List[str]) -> List[Dict[str, Any]]:
     """
     Fetches article content from the Go scraping service.
-    
-    Args:
-        urls: List of URLs to scrape.
-        
-    Returns:
-        List of dictionaries containing scraped article data.
-        Returns an empty list if the request fails.
+    Retries up to 3 times to handle "Cold Start" on Render Free Tier.
     """
-    try:
-        response = requests.post(
-            GO_SCRAPER_URL, 
-            json={"urls": urls}, 
-            timeout=20
-        )
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        print(f"Error fetching articles: {e}")
-        return []
+    max_retries = 3
+    import time
+    
+    for attempt in range(max_retries):
+        try:
+             print(f"DEBUG: Calling Scraper (Attempt {attempt+1}/{max_retries})...")
+             response = requests.post(
+                 GO_SCRAPER_URL, 
+                 json={"urls": urls}, 
+                 timeout=60
+             )
+             response.raise_for_status()
+             
+             data = response.json()
+             if not data:
+                 print(f"DEBUG: Scraper returned empty list on attempt {attempt+1}")
+                 if attempt < max_retries - 1:
+                     time.sleep(2)
+                     continue
+                     
+             return data
+
+        except Exception as e:
+             print(f"DEBUG: Scraper Error (Attempt {attempt+1}): {e}")
+             if attempt < max_retries - 1:
+                 time.sleep(2)
+             else:
+                 print("DEBUG: Scraper failed after max retries.")
+                 return []
+    return []
