@@ -21,14 +21,20 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS configuration for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://frontend:3000", "*"],
-    allow_credentials=True,
+    # Allow all origins for the hackathon/demo context, but disable credentials to be spec-compliant
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+async def root():
+    """Root endpoint to verify backend is online"""
+    return {"message": "Parallax AI Agent API is running", "docs": "/docs"}
 
 
 # Global DB Engine
