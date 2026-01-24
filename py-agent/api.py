@@ -10,7 +10,7 @@ from typing import List, Dict, Any, Optional
 import os
 from sqlalchemy import text
 
-from core.scraper_client import fetch_articles
+from core.scraper_client import fetch_articles, GO_SCRAPER_URL
 from core.agent import run_full_analysis, run_chat_response
 from core.discovery import get_news_urls
 from core.database import get_db_engine, AnalysisResult
@@ -110,7 +110,8 @@ async def health_check():
         db_status = "error"
     
     # Check scraper (just verify env var exists)
-    scraper_url = os.getenv("GO_SCRAPER_URL", "http://localhost:8080/scrape")
+    # Check scraper (verify URL is configured)
+    scraper_url = GO_SCRAPER_URL
     if not scraper_url:
         scraper_status = "unknown"
     

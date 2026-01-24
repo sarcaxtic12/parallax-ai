@@ -2,7 +2,9 @@ import requests
 import os
 from typing import List, Dict, Any
 
-GO_SCRAPER_URL = os.getenv("GO_SCRAPER_URL", "http://localhost:8080/scrape")
+GO_SCRAPER_HOST = os.getenv("GO_SCRAPER_HOST", "localhost")
+GO_SCRAPER_PORT = os.getenv("GO_SCRAPER_PORT", "8080")
+GO_SCRAPER_URL = os.getenv("GO_SCRAPER_URL", f"http://{GO_SCRAPER_HOST}:{GO_SCRAPER_PORT}/scrape")
 
 def fetch_articles(urls: List[str]) -> List[Dict[str, Any]]:
     """

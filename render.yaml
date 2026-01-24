@@ -9,11 +9,16 @@ services:
     envVars:
       - key: PORT
         value: 8000
-      - key: GO_SCRAPER_URL
+      - key: GO_SCRAPER_HOST
         fromService:
           type: web
           name: parallax-scraper
-          property: url
+          property: host
+      - key: GO_SCRAPER_PORT
+        fromService:
+          type: web
+          name: parallax-scraper
+          property: port
       - key: DATABASE_URL
         fromDatabase:
           name: parallax-db
@@ -43,10 +48,7 @@ services:
     plan: free
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: parallax-agent
-          property: url
+        value: https://YOUR_BACKEND_URL.onrender.com # IMPORTANT: Update this in Render Dashboard after deploying the agent
 
 databases:
   # 4. Managed Postgres Database
