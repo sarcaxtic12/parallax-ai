@@ -21,18 +21,22 @@ Experience the flow of Parallax AI:
 
 ### 1. Initiate Research
 Start by entering a topic into the search bar. The system is designed to handle complex political and social queries.
+
 ![Search Interface](imgs/Start.jpg)
 
 ### 2. Narrative Synthesis
 The system aggregates articles from various sources and begins synthesizing the different narratives.
+
 ![Synthesis Process](imgs/middle-1.jpg)
 
 ### 3. Comprehensive Analysis
 Explore the "Bias Meter" and read detailed cards for Liberal, Conservative, and Centrist perspectives. This view highlights the core arguments and omitted context for each side.
+
 ![Analysis Dashboard](imgs/middle-2.jpg)
 
 ### 4. Conversational Deep Dive
 Use the chat interface to ask follow-up questions. The agent has context of all analyzed articles and can answer specific queries about the coverage.
+
 ![Chat Interface](imgs/Last.jpg)
 
 
