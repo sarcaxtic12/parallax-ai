@@ -1,7 +1,7 @@
 # Parallax AI
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-active-success.svg)
+![Status](https://img.shields.io/badge/status-production-success.svg)
 ![Go](https://img.shields.io/badge/backend-Go-00ADD8.svg?logo=go&logoColor=white)
 ![Python](https://img.shields.io/badge/agent-Python-3776AB.svg?logo=python&logoColor=white)
 ![Next.js](https://img.shields.io/badge/frontend-Next.js-black.svg?logo=next.js&logoColor=white)
@@ -11,54 +11,65 @@
 
 ## Project Overview
 
-Parallax AI is a research tool designed to analyze media bias in real time. The goal of this project is to address the issue of "Parallax Gaps" where different news outlets report conflicting facts about the same event depending on their political alignment. Instead of just reading one source, this system uses an AI agent to read articles from Left, Center, and Right leaning sources to find out what information is being omitted by each side.
+Parallax AI is an advanced research tool designed to analyze media bias and narrative framing in real-time. By leveraging autonomous AI agents, the platform dissects conflicting news reports across the political spectrum—Left, Center, and Right—to identify omitted information and "Parallax Gaps" in coverage.
 
-The system works by automating the entire research process. It monitors news feeds, downloads the article content, and uses Large Language Models (LLMs) to analyze the text. The final output is a report that highlights the differences in framing and facts across the political spectrum.
+This project demonstrates a production-grade microservices architecture, integrating high-performance data collection with sophisticated natural language processing to deliver actionable insights into how the same event is portrayed differently by various outlets.
 
-## Demo
+## Key Features
 
-Experience the flow of Parallax AI:
+- **Autonomous Research Agent**: A Python-based orchestrator that intelligently searches, filters, and analyzes news sources.
+- **High-Performance Scraper**: A dedicated Go microservice capable of concurrent, high-throughput content extraction.
+- **Narrative Synthesis**: Uses Large Language Models (LLM) to synthesize distinct narratives and highlight omissions.
+- **Conversational Interface**: An interactive chat system that retains context from analyzed reports, allowing users to interrogate the data deeply.
+- **Production UI**: A modern, "Liquid Glass" diverse aesthetic built with Next.js and Tailwind CSS.
+
+## The Workflow
+
+Parallax AI automates the entire journey from topic discovery to deep narrative analysis.
 
 ### 1. Initiate Research
-Start by entering a topic into the search bar. The system is designed to handle complex political and social queries.
+The user begins by querying a complex political or social topic. The system instantly aggregates diverse sources.
 
-![Search Interface](imgs/Start.jpg)
+![Initiate Research](imgs/Start.jpg)
 
 ### 2. Narrative Synthesis
-The system aggregates articles from various sources and begins synthesizing the different narratives.
+The autonomous agent parses dozens of articles, identifying distinct narrative threads and synthesizing them into a coherent overview.
 
-![Synthesis Process](imgs/middle-1.jpg)
+![Narrative Synthesis](imgs/start-2.jpg)
 
-### 3. Comprehensive Analysis
-Explore the "Bias Meter" and read detailed cards for Liberal, Conservative, and Centrist perspectives. This view highlights the core arguments and omitted context for each side.
+### 3. Comprehensive Analysis & Reporting
+The core of the platform. A dual-pane view presents a **Research Report** alongside a **Bias Meter**, visualizing the political lean of sources and summarizing the core arguments of each perspective.
 
-![Analysis Dashboard](imgs/middle-2.jpg)
+| Research Report | Bias Analysis |
+|:---:|:---:|
+| ![Research Report](imgs/middle-1.jpg) | ![Bias Meter](imgs/middle-2.jpg) |
 
 ### 4. Conversational Deep Dive
-Use the chat interface to ask follow-up questions. The agent has context of all analyzed articles and can answer specific queries about the coverage.
+Users can interact with the findings through a context-aware chat interface. The agent recalls specific details from the analysis to answer follow-up questions about omissions and framing.
 
-![Chat Interface](imgs/Last.jpg)
-
+![Conversational Deep Dive](imgs/Last.jpg)
 
 ## Technical Architecture
 
-This project is built as a distributed system using Docker. I chose to use a microservices architecture to handle the different requirements of scraping and analysis.
+The system is built as a distributed microservices application, ensuring scalability and separation of concerns.
 
-### Agent Orchestrator (Python)
-The core logic is written in Python using FastAPI. This services acts as the controller. It manages the workflow and connects to the LLM (using Groq and Llama 3) to perform the text analysis. I used Python here because of its strong support for AI and data processing libraries.
+### Agent Orchestrator (Python / FastAPI)
+The brain of the operation. It manages the research workflow, interfaces with LLMs (Llama 3 via Groq), and handles the synthesis logic. Python was selected for its robust ecosystem in AI and data processing.
 
-### High Performance Scraper (Go)
-For the web scraper, I used Go (Golang) with the Gin framework. Scrapers need to be fast and handle many requests at once, so Go was a better choice than Python for this specific component. It fetches the HTML, cleans it up to remove ads and scripts, and returns just the main text of the article.
+### High-Performance Scraper (Go / Gin)
+A specialized microservice for raw speed. Written in Go, it handles concurrent scraping, HTML cleaning, and text extraction. This separation prevents the heavy IO/CPU load of scraping from blocking the agent's reasoning capabilities.
 
-### Frontend Interface (Next.js)
-The user interface is built with Next.js 14 and Tailwind CSS. It is designed to look modern and clean, using a "Liquid Glass" theme. It communicates with the backend API to display the "Bias Meter" and other visualizations that help users understand the data.
+### Frontend Interface (Next.js 14)
+A reactive, server-side rendered UI built with Next.js App Router and Tailwind CSS. It features a custom "Liquid Glass" design system, real-time streaming updates, and a responsive layout optimized for data density.
 
-### Database (PostgreSQL)
-I am using PostgreSQL to store all the analysis results. It handles both the relational data for the reports and the vector data if needed for search context.
+### Data Persistence (PostgreSQL)
+Stores analysis results for caching and historical context. This persistence layer allows the chat agent to "remember" the specific content of articles analyzed in previous sessions.
 
-## How to Run Locally
+## Installation & Local Development
 
-You will need Docker Desktop installed to run this project. You also need API keys for Groq and SerpAPI.
+Run the full stack locally using Docker Compose.
+
+**Prerequisites**: [Docker Desktop](https://www.docker.com/products/docker-desktop/), [Groq API Key](https://console.groq.com/), [SerpAPI Key](https://serpapi.com/).
 
 1. **Clone the repository**
    ```bash
@@ -66,61 +77,28 @@ You will need Docker Desktop installed to run this project. You also need API ke
    cd parallax-ai
    ```
 
-2. **Set up the environment variables**
-   Create a file named `.env` in the root folder and add your keys:
+2. **Configure Environment**
+   Create a `.env` file in the root directory:
    ```ini
-   POSTGRES_USER=parallax_user
-   POSTGRES_PASSWORD=parallax_pass
-   POSTGRES_DB=parallax_core
    GROQ_API_KEY=your_groq_key
    SERP_API_KEY=your_serp_key
-   DATABASE_URL=postgresql://parallax_user:parallax_pass@db:5432/parallax_core
-   GO_SCRAPER_URL=http://scraper:8080/scrape
    ```
 
-3. **Run with Docker Compose**
+3. **Start the Application**
    ```bash
-   docker-compose up --build -d
+   docker-compose up --build
    ```
 
-4. **Open the application**
-   *   The frontend will be running at `http://localhost:3000`.
-   *   The API documentation is available at `http://localhost:8000/docs`.
-
-## API Endpoints
-
-If you want to use the API directly, here are the main endpoints:
-
-*   **POST /api/analyze**
-    This starts the analysis for a given topic. You need to send a JSON body with the "topic" key.
-    ```json
-    {
-      "topic": "Global Economic Summit"
-    }
-    ```
-
-*   **POST /api/chat**
-    This allows you to ask questions about the analyzed data.
-    ```json
-    {
-      "topic": "Global Economic Summit",
-      "query": "What did the left-leaning sources omit?"
-    }
-    ```
-
-*   **GET /api/history**
-    This returns a list of past analyses.
+4. **Access**
+   - **Frontend**: [http://localhost:3000](http://localhost:3000)
+   - **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## Deployment
 
-The project is configured to run on Render using the `render.yaml` file. It sets up the database and all services with short, consistent names:
+The project is configured for seamless deployment on platform-as-a-service providers like Render.
 
-| Service   | Name      | Role                          |
-|----------|-----------|-------------------------------|
-| Frontend | `parallax`| Next.js site (main URL)      |
-| API      | `agent`   | Python FastAPI + analysis     |
-| Scraper  | `scraper` | Go scraping microservice      |
-| Database | `db`      | PostgreSQL                    |
+- **`render.yaml` included**: Defines all services (Web, Workers, DB) as infrastructure-as-code.
+- **Auto-Deploy**: Configured to automatically build and deploy upon pushing to the `main` branch.
 
-Set `NEXT_PUBLIC_API_URL` for the **parallax** service to your agent URL (e.g. `https://agent.onrender.com`) if Render adds a suffix to the hostname.
-
+---
+*Designed & Developed by Hyder Ahmed | © 2026 All Rights Reserved*

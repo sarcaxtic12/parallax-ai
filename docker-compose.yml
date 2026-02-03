@@ -48,10 +48,11 @@ services:
   parallax:
     build:
       context: ./parallax-frontend
+      args:
+        # Browser must reach the API; use localhost when running via docker-compose
+        NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:
       - "3000:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://agent:8000
     depends_on:
       - agent
     networks:

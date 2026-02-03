@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, User, Bot, Sparkles } from 'lucide-react'
+import { Send, User, Bot, Sparkles, Loader2 } from 'lucide-react'
 
 interface Message {
     id: string
@@ -15,9 +15,13 @@ interface ChatInterfaceProps {
     topic: string
     initialQuery: string
     onNewAnalysis: (topic: string) => void
+    // Report context for chat
+    leftNarrative?: string
+    rightNarrative?: string
+    overview?: string
 }
 
-export function ChatInterface({ topic, initialQuery, onNewAnalysis }: ChatInterfaceProps) {
+export function ChatInterface({ topic, initialQuery, onNewAnalysis, leftNarrative, rightNarrative, overview }: ChatInterfaceProps) {
     const [input, setInput] = useState('')
     const [messages, setMessages] = useState<Message[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -69,11 +73,21 @@ export function ChatInterface({ topic, initialQuery, onNewAnalysis }: ChatInterf
         setIsLoading(true)
 
         try {
-            // Call API
+            // Call API with report context
+            // Only include sources for the first user follow-up (when messages size is equal to initial 2) to optimize tokens
+            const isFirstFollowup = messages.length === 2
+
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, query: userMsg })
+                body: JSON.stringify({
+                    topic,
+                    query: userMsg,
+                    left_narrative: leftNarrative,
+                    right_narrative: rightNarrative,
+                    overview: overview,
+                    include_sources: isFirstFollowup
+                })
             })
 
             if (!response.ok) {
@@ -105,9 +119,9 @@ export function ChatInterface({ topic, initialQuery, onNewAnalysis }: ChatInterf
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-h-0">
             {/* Messages Area - Scrollable */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 space-y-4">
                 <AnimatePresence mode="popLayout">
                     {messages.map((msg) => (
                         <motion.div
@@ -162,15 +176,15 @@ export function ChatInterface({ topic, initialQuery, onNewAnalysis }: ChatInterf
             </div>
 
             {/* Input Area - Fixed at Bottom */}
-            <div className="flex-shrink-0 p-4 border-t border-white/5 bg-black/30 backdrop-blur-xl">
+            <div className="flex-shrink-0 mt-auto p-4 border-t border-white/5 bg-black/30 backdrop-blur-xl">
                 <form onSubmit={handleSend} className="relative">
-                    <div className="glass-input flex h-14 w-full items-center gap-3 rounded-full px-5 transition-all hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                    <div className="glass-input flex h-14 w-full items-center gap-3 rounded-full px-5 transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20 bg-white/10 backdrop-blur-2xl shadow-2xl">
                         <User className="w-5 h-5 text-white/50" />
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask a follow-up question..."
+                            placeholder="Ask about the report..."
                             className="flex-1 bg-transparent text-sm font-normal text-white placeholder-white/30 focus:outline-none"
                         />
                         <button
@@ -178,11 +192,10 @@ export function ChatInterface({ topic, initialQuery, onNewAnalysis }: ChatInterf
                             disabled={!input.trim() || isLoading}
                             className="glass-button flex items-center justify-center rounded-full p-2 disabled:opacity-30 hover:scale-105 transition-transform"
                         >
-                            {isLoading ? <Sparkles className="w-4 h-4 animate-pulse" /> : <Send className="w-4 h-4" />}
+                            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                         </button>
                     </div>
                 </form>
-                <p className="text-xs text-white/20 text-center mt-3">Powered by GPT-OSS 120B & Llama 4 Scout</p>
             </div>
         </div>
     )

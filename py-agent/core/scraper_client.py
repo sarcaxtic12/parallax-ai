@@ -1,7 +1,7 @@
 import requests
 import os
 import time
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable, Optional
 
 GO_SCRAPER_HOST = os.getenv("GO_SCRAPER_HOST", "localhost")
 GO_SCRAPER_PORT = os.getenv("GO_SCRAPER_PORT", "8080")
@@ -81,3 +81,47 @@ def fetch_articles(urls: List[str]) -> List[Dict[str, Any]]:
 
     print("DEBUG: Scraper failed after max retries.")
     return []
+
+
+def fetch_articles_with_progress(
+    urls: List[str],
+    on_progress: Optional[Callable[[int, int, int], None]] = None,
+    batch_size: int = 2,
+) -> List[Dict[str, Any]]:
+    """
+    Fetches article content in batches and reports progress.
+    on_progress(current_done, total_urls, articles_collected) is called after each batch.
+    """
+    timeout_seconds = 90
+    articles: List[Dict[str, Any]] = []
+    total = len(urls)
+    for i in range(0, total, batch_size):
+        batch = urls[i : i + batch_size]
+        for attempt in range(3):
+            try:
+                response = requests.post(
+                    GO_SCRAPER_URL,
+                    json={"urls": batch},
+                    timeout=timeout_seconds,
+                )
+                response.raise_for_status()
+                data = response.json() or []
+                for item in data if isinstance(data, list) else []:
+                    if item.get("status") != "success":
+                        continue
+                    content = (item.get("content") or "").strip()
+                    if content and len(content) >= 100:
+                        articles.append({
+                            "url": item.get("url", ""),
+                            "title": item.get("title", ""),
+                            "content": content,
+                            "source": _source_from_url(item.get("url", "")),
+                        })
+                if on_progress:
+                    on_progress(min(i + batch_size, total), total, len(articles))
+                break
+            except Exception as e:
+                print(f"DEBUG: Scraper batch error (attempt {attempt + 1}): {e}")
+                if attempt < 2:
+                    time.sleep(2)
+    return articles

@@ -138,3 +138,29 @@ body {
     opacity: 1;
   }
 }
+
+/* Progress bar shimmer when phase is long-running (e.g. analysis) */
+@keyframes progressShimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.ice-text-shadow {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+}
+
+.glass-card {
+  background: rgba(30, 30, 30, 0.5);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+}
+
+/* Results mode - lock body to viewport for independent panel scrolling */
+.results-mode {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}

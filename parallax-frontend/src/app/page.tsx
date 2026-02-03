@@ -2,140 +2,153 @@
 
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Search, ArrowRight, Sparkles, MessageSquarePlus } from 'lucide-react'
-import { useAnalyze } from '@/lib/hooks'
+import { Search, ArrowRight, Loader2, MessageSquarePlus } from 'lucide-react'
 import { LoadingAnimation } from '@/components/ui/loading'
 import { BiasMeter } from '@/components/bias-meter'
 import { NarrativeCards } from '@/components/narrative-cards'
 import { SourcesSection } from '@/components/sources-section'
 import { ArticleOverview } from '@/components/article-overview'
 import { ChatInterface } from '@/components/chat-interface'
-import type { AnalysisResponse } from '@/lib/api'
+import { Footer } from '@/components/footer'
+import { analyzeTopicWithProgress, type AnalysisResponse, type AnalysisProgress } from '@/lib/api'
 
 export default function HomePage() {
     const [topic, setTopic] = useState('')
-    const [loadingStep, setLoadingStep] = useState(0)
     const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null)
-
-    const analyzeMutation = useAnalyze()
-
-    useEffect(() => {
-        if (analyzeMutation.isPending) {
-            setLoadingStep(0)
-            const timer1 = setTimeout(() => setLoadingStep(1), 2000)
-            const timer2 = setTimeout(() => setLoadingStep(2), 5000)
-            return () => {
-                clearTimeout(timer1)
-                clearTimeout(timer2)
-            }
-        } else if (analyzeMutation.isSuccess) {
-            setLoadingStep(3)
-        }
-    }, [analyzeMutation.isPending, analyzeMutation.isSuccess])
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [analyzeError, setAnalyzeError] = useState<string | null>(null)
+    const [progress, setProgress] = useState<AnalysisProgress | null>(null)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!topic.trim() || analyzeMutation.isPending) return
+        if (!topic.trim() || isAnalyzing) return
 
         setAnalysisData(null)
-        setLoadingStep(0)
+        setAnalyzeError(null)
+        setProgress(null)
+        setIsAnalyzing(true)
 
         try {
-            const result = await analyzeMutation.mutateAsync(topic.trim())
+            const result = await analyzeTopicWithProgress(topic.trim(), (p) => setProgress(p))
             setAnalysisData(result)
         } catch (error) {
             console.error('Analysis failed:', error)
+            setAnalyzeError(error instanceof Error ? error.message : 'Analysis failed')
+        } finally {
+            setIsAnalyzing(false)
+            setProgress(null)
         }
     }
 
     const handleReset = () => {
         setTopic('')
         setAnalysisData(null)
-        setLoadingStep(0)
-        analyzeMutation.reset()
+        setAnalyzeError(null)
+        setProgress(null)
     }
 
-    const showResults = analysisData && !analyzeMutation.isPending
+    const showResults = analysisData && !isAnalyzing
+
+    // Toggle body class for results mode (viewport locking)
+    useEffect(() => {
+        if (showResults) {
+            document.body.classList.add('results-mode')
+        } else {
+            document.body.classList.remove('results-mode')
+        }
+        return () => {
+            document.body.classList.remove('results-mode')
+        }
+    }, [showResults])
 
     // Initial Search View
     return (
-        <div className="min-h-screen flex flex-col relative overflow-hidden">
-            {/* Logo */}
-            <header className="absolute top-0 left-0 p-6 z-50">
-                <div
-                    className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
-                    onClick={handleReset}
-                >
-                    <h1 className="text-3xl font-brand tracking-tight text-white/90">
-                        parallax
-                    </h1>
-                </div>
-            </header>
-
+        <>
             <AnimatePresence mode="wait">
                 {!showResults ? (
-                    <motion.div
-                        key="search"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
-                        transition={{ duration: 0.5 }}
-                        className="flex-1 flex flex-col items-center justify-center px-4 -mt-20"
-                    >
-                        <div className="w-full max-w-2xl text-center space-y-8">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
+                    <div className="min-h-screen flex flex-col relative overflow-hidden">
+                        {/* Logo */}
+                        <header className="absolute top-0 left-0 p-6 z-50 flex-shrink-0">
+                            <div
+                                className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
+                                onClick={handleReset}
                             >
-                                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 ice-text-shadow">
-                                    What's the narrative?
-                                </h2>
-                                <p className="text-lg text-white/50">
-                                    Discover how different sources frame the same story.
-                                </p>
-                            </motion.div>
+                                <h1 className="text-3xl font-brand tracking-tight text-white/90">
+                                    parallax
+                                </h1>
+                            </div>
+                        </header>
 
-                            <form onSubmit={handleSubmit}>
-                                <div className="glass-input flex h-16 w-full items-center gap-4 rounded-full px-6 transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                                    <Search className="w-6 h-6 text-white/60" />
-                                    <input
-                                        type="text"
-                                        value={topic}
-                                        onChange={(e) => setTopic(e.target.value)}
-                                        placeholder="Enter a topic to research..."
-                                        disabled={analyzeMutation.isPending}
-                                        className="flex-1 bg-transparent text-lg font-light text-white placeholder-white/40 focus:outline-none"
-                                        autoFocus
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={!topic.trim() || analyzeMutation.isPending}
-                                        className="glass-button flex items-center justify-center rounded-full p-3 disabled:opacity-30 hover:scale-105 transition-transform"
-                                    >
-                                        {analyzeMutation.isPending ? (
-                                            <Sparkles className="w-5 h-5 animate-pulse" />
-                                        ) : (
-                                            <ArrowRight className="w-5 h-5" />
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
-
-                            {(analyzeMutation.isPending || analyzeMutation.isError) && (
+                        <motion.div
+                            key="search"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
+                            transition={{ duration: 0.5 }}
+                            className="flex-1 flex flex-col items-center justify-center min-h-0 px-4 overflow-y-auto"
+                        >
+                            {/* Centered Content Container */}
+                            <div className="w-full max-w-2xl text-center space-y-6 flex flex-col items-center justify-center">
                                 <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="mt-12"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
                                 >
-                                    <LoadingAnimation
-                                        step={loadingStep}
-                                        error={analyzeMutation.isError ? analyzeMutation.error?.message : null}
-                                    />
+                                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 ice-text-shadow">
+                                        What's the narrative?
+                                    </h2>
+                                    <p className="text-base sm:text-lg text-white/50">
+                                        Discover how different sources frame the same story.
+                                    </p>
                                 </motion.div>
-                            )}
-                        </div>
-                    </motion.div>
+
+                                <form onSubmit={handleSubmit} className="w-full">
+                                    <div className="glass-input flex h-14 w-full items-center gap-4 rounded-full px-5 transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.15)] border border-white/20 bg-white/10 backdrop-blur-2xl shadow-xl">
+                                        <Search className="w-5 h-5 text-white/50" />
+                                        <input
+                                            type="text"
+                                            value={topic}
+                                            onChange={(e) => setTopic(e.target.value)}
+                                            placeholder=""
+                                            disabled={isAnalyzing}
+                                            className="flex-1 bg-transparent text-lg font-normal text-white focus:outline-none"
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={!topic.trim() || isAnalyzing}
+                                            className="flex items-center justify-center p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-30"
+                                        >
+                                            {isAnalyzing ? (
+                                                <Loader2 className="w-5 h-5 animate-spin text-white/70" />
+                                            ) : (
+                                                <ArrowRight className="w-5 h-5 text-white/70" />
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+
+                                {(isAnalyzing || analyzeError) && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="mt-8 w-full flex justify-center flex-shrink-0"
+                                    >
+                                        <LoadingAnimation
+                                            progress={progress?.progress}
+                                            phase={progress?.phase}
+                                            message={progress?.message}
+                                            current={progress?.current}
+                                            total={progress?.total}
+                                            error={analyzeError}
+                                        />
+                                    </motion.div>
+                                )}
+                            </div>
+                        </motion.div>
+
+                        <Footer />
+                    </div>
                 ) : (
                     <motion.div
                         key="results"
@@ -145,7 +158,7 @@ export default function HomePage() {
                         className="h-screen flex flex-col overflow-hidden"
                     >
                         {/* Fixed Header */}
-                        <header className="flex-shrink-0 p-4 border-b border-white/5 bg-black/20 backdrop-blur-xl z-50 flex items-center justify-between">
+                        <header className="flex-shrink-0 px-6 py-4 border-b border-white/5 bg-black/20 backdrop-blur-xl z-50 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div
                                     className="cursor-pointer transition-opacity hover:opacity-80"
@@ -168,9 +181,9 @@ export default function HomePage() {
                             </button>
                         </header>
 
-                        {/* Split Content */}
-                        <div className="flex-1 flex overflow-hidden">
-                            {/* Left Panel - Report */}
+                        {/* Split Content - Both panels fill remaining height */}
+                        <div className="flex-1 flex min-h-0">
+                            {/* Left Panel - Report (independent scroll) */}
                             <div className="w-full lg:w-1/2 h-full overflow-y-auto custom-scrollbar border-r border-white/5 bg-black/5">
                                 <div className="p-6 lg:p-10 space-y-6 w-full">
                                     {/* Report Header */}
@@ -185,7 +198,7 @@ export default function HomePage() {
                                             <span className="px-2 py-0.5 rounded-md bg-white/10 text-white/60 text-xs font-medium">
                                                 {analysisData?.sources_count} Sources
                                             </span>
-                                            <span className="text-white/30 text-xs">GPT-OSS 120B</span>
+                                            <span className="text-white/30 text-xs">Llama 3.3 70B</span>
                                         </div>
                                     </div>
 
@@ -205,18 +218,22 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Right Panel - Chat */}
+                            {/* Right Panel - Chat (independent scroll with fixed input) */}
                             <div className="hidden lg:flex w-1/2 h-full flex-col overflow-hidden bg-black/10">
                                 <ChatInterface
                                     topic={analysisData?.topic || ''}
                                     initialQuery={topic}
                                     onNewAnalysis={setTopic}
+                                    leftNarrative={analysisData?.narratives?.Left}
+                                    rightNarrative={analysisData?.narratives?.Right}
+                                    overview={analysisData?.omission_report}
                                 />
                             </div>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </>
     )
 }
+

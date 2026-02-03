@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
@@ -27,14 +28,14 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
     # Initialize LLM
     # Note: Expects GROQ_API_KEY to be set in environment
     
-    # Synthesis Model (Maverick - Enhanced Synthesis)
+    # Synthesis Model (Maverick - Enhanced Synthesis, good for longer outputs)
     llm_synthesis = ChatGroq(model_name="meta-llama/llama-4-maverick-17b-128e-instruct", temperature=0.3)
     
-    # Classification Model A (GPT-OSS)
-    llm_processing_a = ChatGroq(model_name="openai/gpt-oss-120b", temperature=0)
+    # Classification Model A (Llama 3.3 70B Versatile - High Quality)
+    llm_processing_a = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
     
-    # Classification Model B (GPT-OSS)
-    llm_processing_b = ChatGroq(model_name="openai/gpt-oss-120b", temperature=0)
+    # Classification Model B
+    llm_processing_b = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
 
     # Chain 1: Classifier Factory (Reusable Prompt - Enhanced)
     classifier_prompt = ChatPromptTemplate.from_template(
@@ -51,35 +52,29 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
 
     # Chain 2: Narrative Synthesizer (Concise Summary)
     synthesizer_prompt = ChatPromptTemplate.from_template(
-        "You are an expert narrative analyst. Your goal is to write a single, cohesive paragraph (50-75 words) summarizing the **{bias}** perspective on: **'{topic}'**.\n\n"
-        "**Input Data:**\n"
-        "Summaries from {bias}-leaning sources: \n{summaries}\n\n"
-        "**Response Guidelines:**\n"
-        "- **Outcome Only**: Output ONLY the final summary paragraph. Do not explain your steps.\n"
-        "- **Relevance**: Incorporate ONLY points relevant to '{topic}'. If the input summaries are about unrelated events, ignore them.\n"
-        "- **Zero Relevant Data**: If absolutely no summaries relate to '{topic}', output exactly: 'No significant reporting found from this perspective on this specific topic.'\n"
+        "You are an expert political analyst. Synthesize the **{bias}** perspective on: **'{topic}'**.\n\n"
+        "**Source Summaries:**\n{summaries}\n\n"
+        "**Instructions:**\n"
+        "1. Write a single, focused paragraph (60-100 words) capturing the core {bias} viewpoint.\n"
+        "2. Be SPECIFIC. Mention key arguments, concerns, or positions held by this side.\n"
+        "3. If the summaries discuss related policy, economic, or social implications of '{topic}', include those angles.\n"
+        "4. ONLY if the summaries are completely unrelated to '{topic}' (e.g., about sports when topic is politics), output: 'No significant reporting found from this perspective on this specific topic.'\n"
+        "5. Output ONLY the paragraph, no preamble.\n"
     )
     synthesizer_chain = synthesizer_prompt | llm_synthesis | StrOutputParser()
 
-    # Chain 3: Omission Detector (Deep Dive Overview)
+    # Chain 3: Overview & Omission Analysis
     omission_prompt = ChatPromptTemplate.from_template(
-        "You are a Senior Feature Editor at a prestige publication. Write a **definitive, high-quality feature article** (800+ words) on: **'{topic}'**.\n\n"
-        "**Source Material:**\n"
-        "**Left-Wing Narrative:**\n{left_narrative}\n\n"
-        "**Right-Wing Narrative:**\n{right_narrative}\n\n"
-        "**Writing Standards:**\n"
-        "1. **No Generic Openers**: NEVER start with 'The topic of...', 'Significant discourse...', or 'The issue of...'. Start immediately with a strong hook, a concrete fact, or a vivid description of the core event.\n"
-        "2. **Narrative Flow**: Do not just list 'Left says X, Right says Y'. Weaver the perspectives into a single cohesive story. Use transitional phrases that highlight the conflict naturally.\n"
-        "3. **Synthesis**: Move beyond comparison. Explain *why* the narratives diverge (e.g., 'At the heart of the disagreement is a fundamental difference in how...')\n"
-        "4. **Professionalism**: Maintain a sophisticated, authoritative tone throughout.\n\n"
-        "**Article Structure:**\n"
-        "1. **Title**: Engaging and specific (e.g., 'The Battle for the Border: Truth and Rhetoric').\n"
-        "2. **Executive Summary**: A hard-hitting abstract (in bold).\n"
-        "3. **The Deep Dive**: The main body. Dense with information, nuanced analysis, and fact-checking.\n"
-        "4. **The Blind Spots**: A dedicated section analyzing what facts were omitted by each side.\n"
-        "5. **Conclusion**: A final independent assessment.\n\n"
-        "**Constraints:**\n"
-        "- **Relevance Check**: If the provided narratives are empty or unrelated to '{topic}', explicitly write: 'NOTE: The available search results do not contain sufficient reporting on this specific topic to generate a full report.' Do not hallucinate content.\n"
+        "You are a senior political analyst writing a balanced briefing on: **'{topic}'**.\n\n"
+        "**Left-Wing Perspective:**\n{left_narrative}\n\n"
+        "**Right-Wing Perspective:**\n{right_narrative}\n\n"
+        "**Write a comprehensive analysis (300-500 words) that:**\n"
+        "1. **Opens with substance**: Start with a key fact, statistic, or concrete event. NO generic openers like 'The topic of...' or 'There has been significant debate...'\n"
+        "2. **Answers the question**: If '{topic}' is a question (e.g., 'Is X happening?'), provide a DIRECT ANSWER based on the evidence, then explain.\n"
+        "3. **Compares perspectives**: Explain what each side emphasizes and WHY they frame it that way.\n"
+        "4. **Identifies blind spots**: What does each side minimize or ignore?\n"
+        "5. **Provides an objective assessment**: Based on the narratives, what's the most balanced conclusion?\n\n"
+        "**Critical Rule**: If the narratives say 'No significant reporting found', acknowledge that the search didn't find strong coverage and explain what typical {topic} discourse looks like based on your knowledge. Do NOT claim you have no information.\n"
     )
     omission_chain = omission_prompt | llm_synthesis | StrOutputParser()
 
@@ -162,15 +157,24 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
     # simulates the load distribution and satisfies the "use two models" requirement.
     # To keep it robust without complex async in Streamlit, we'll iterate.
     
-    # Process Batch A (Versatile)
-    for art in batch_a:
-        res = process_article(art, chain_a, "Versatile")
-        if res: results.append(res)
+    # Parallel Processing using ThreadPoolExecutor
+    # Using max_workers=5 to balance speed with rate limits on the 70B model
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = []
         
-    # Process Batch B (Scout)
-    for art in batch_b:
-        res = process_article(art, chain_b, "Scout")
-        if res: results.append(res)
+        # Schedule Batch A
+        for art in batch_a:
+            futures.append(executor.submit(process_article, art, chain_a, "Versatile A"))
+            
+        # Schedule Batch B
+        for art in batch_b:
+            futures.append(executor.submit(process_article, art, chain_b, "Versatile B"))
+            
+        # Collect results
+        for future in as_completed(futures):
+            res = future.result()
+            if res:
+                results.append(res)
 
     # Group results
     grouped_summaries = {"Left": [], "Center": [], "Right": []}

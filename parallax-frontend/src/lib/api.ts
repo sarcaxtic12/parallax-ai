@@ -39,6 +39,14 @@ export interface HealthResponse {
     scraper: string
 }
 
+export interface AnalysisProgress {
+    phase: 'discovery' | 'scraping' | 'analysis'
+    progress: number
+    message?: string
+    current?: number
+    total?: number
+}
+
 // API Functions
 export async function analyzeTopic(topic: string): Promise<AnalysisResponse> {
     const response = await fetch(`${API_URL}/api/analyze`, {
@@ -59,6 +67,65 @@ export async function analyzeTopic(topic: string): Promise<AnalysisResponse> {
     }
 
     return response.json()
+}
+
+/**
+ * Run analysis with Server-Sent Events progress updates.
+ * onProgress is called with phase, progress 0-100, and optional message/current/total.
+ */
+export async function analyzeTopicWithProgress(
+    topic: string,
+    onProgress: (p: AnalysisProgress) => void
+): Promise<AnalysisResponse> {
+    const response = await fetch(`${API_URL}/api/analyze/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic }),
+    })
+    if (!response.ok) {
+        const fallback =
+            response.status === 502 || response.status === 503
+                ? 'Service temporarily unavailable. Please try again in a minute.'
+                : 'Analysis failed'
+        const error = await response.json().catch(() => ({ detail: fallback }))
+        throw new Error(error.detail || fallback)
+    }
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('No response body')
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let result: AnalysisResponse | null = null
+    let errorDetail: string | null = null
+    while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                try {
+                    const data = JSON.parse(line.slice(6))
+                    if (data.event === 'progress') {
+                        onProgress({
+                            phase: data.phase,
+                            progress: data.progress ?? 0,
+                            message: data.message,
+                            current: data.current,
+                            total: data.total,
+                        })
+                    } else if (data.event === 'result') {
+                        result = data.data
+                    } else if (data.event === 'error') {
+                        errorDetail = data.detail ?? 'Analysis failed'
+                    }
+                } catch (_) {}
+            }
+        }
+    }
+    if (errorDetail) throw new Error(errorDetail)
+    if (!result) throw new Error('Analysis failed')
+    return result
 }
 
 export async function checkHealth(): Promise<HealthResponse> {

@@ -11,6 +11,7 @@ const config: Config = {
             colors: {
                 "primary": "#e5e5e5",
                 "obsidian": "#050505",
+                "neon-cyan": "#22d3ee",
                 "pewter": "#94a3b8",
                 "pewter-dark": "#475569",
                 "champagne": "#e5d9b6",

@@ -1,6 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import {
     Search,
     Database,
@@ -11,36 +12,80 @@ import {
 } from 'lucide-react'
 
 interface LoadingProps {
-    step: number
+    step?: number
     error?: string | null
+    /** Real progress 0-100 from server (overrides step when set) */
+    progress?: number
+    phase?: 'discovery' | 'scraping' | 'analysis'
+    message?: string
+    current?: number
+    total?: number
 }
 
 const steps = [
     {
         icon: Search,
         message: 'Scanning Global Sources...',
-        subtext: 'Discovering relevant news articles via SerpAPI'
+        subtext: 'Discovering diverse perspectives'
     },
     {
         icon: Database,
-        message: 'Ingesting Data...',
-        subtext: 'High-concurrency scraping via Go microservice'
+        message: 'Reading Articles...',
+        subtext: 'Processing content from multiple sources'
     },
     {
         icon: Brain,
-        message: 'Synthesizing Narratives...',
-        subtext: 'Analyzing bias patterns with Llama 3.3 70B'
+        message: 'Analyzing Perspectives...',
+        subtext: 'Synthesizing viewpoints and detecting bias'
     },
     {
         icon: CheckCircle2,
         message: 'Analysis Complete',
-        subtext: 'Results ready'
+        subtext: 'Report ready'
     },
 ]
 
-export function LoadingAnimation({ step, error }: LoadingProps) {
-    const currentStep = steps[Math.min(step, steps.length - 1)]
-    const Icon = currentStep.icon
+const phaseConfig: Record<string, { message: string; subtext: string; icon: typeof Search }> = {
+    discovery: { message: 'Scanning Global Sources...', subtext: 'Discovering diverse perspectives', icon: Search },
+    scraping: { message: 'Reading Articles...', subtext: 'Processing content from multiple sources', icon: Database },
+    analysis: { message: 'Analyzing Perspectives...', subtext: 'Synthesizing viewpoints and detecting bias', icon: Brain },
+}
+
+export function LoadingAnimation({ step = 0, error, progress, phase, message, current, total }: LoadingProps) {
+    const useRealProgress = typeof progress === 'number'
+    const fallbackStep = steps[Math.min(step, steps.length - 1)]
+    const phaseStep = phase && phaseConfig[phase] ? phaseConfig[phase] : null
+    const displayMessage = message ?? (phaseStep?.message ?? fallbackStep.message)
+    const displaySubtext = (useRealProgress && total != null && current != null && phase === 'scraping')
+        ? `Article ${current} of ${total}`
+        : (phaseStep?.subtext ?? fallbackStep.subtext)
+
+    // When stuck in "analysis" at ~90%+, crawl the bar toward 98% so the user sees movement (~1% every 2s)
+    const [crawlPct, setCrawlPct] = useState<number | null>(null)
+    const serverPct = useRealProgress ? Math.min(100, Math.max(0, progress)) : (step / 3) * 100
+    const isAnalysisStalled = phase === 'analysis' && serverPct >= 90 && serverPct < 98
+    useEffect(() => {
+        if (!isAnalysisStalled) {
+            setCrawlPct(null)
+            return
+        }
+        setCrawlPct(serverPct)
+        const target = 98
+        const start = serverPct
+        const duration = 20000 // 20s to crawl from current to 98%
+        const startTime = Date.now()
+        const tick = () => {
+            const elapsed = Date.now() - startTime
+            const t = Math.min(1, elapsed / duration)
+            const eased = 1 - (1 - t) * (1 - t) // ease-out quad
+            const value = start + (target - start) * eased
+            setCrawlPct(value)
+            if (t < 1) requestAnimationFrame(tick)
+        }
+        const id = requestAnimationFrame(tick)
+        return () => cancelAnimationFrame(id)
+    }, [phase, serverPct, isAnalysisStalled])
+    const pct = isAnalysisStalled && crawlPct != null ? crawlPct : serverPct
 
     return (
         <motion.div
@@ -68,59 +113,41 @@ export function LoadingAnimation({ step, error }: LoadingProps) {
                     </motion.div>
                 ) : (
                     <motion.div
-                        key={step}
+                        key={pct}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className="space-y-6"
                     >
-                        {/* Animated Icon Container */}
-                        <div className="relative w-20 h-20 mx-auto">
-                            <motion.div
-                                className="absolute inset-0 rounded-full bg-neon-cyan/20"
-                                animate={{
-                                    scale: [1, 1.2, 1],
-                                    opacity: [0.5, 0.2, 0.5],
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: 'easeInOut',
-                                }}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                {step < 3 ? (
-                                    <Loader2 className="w-10 h-10 text-neon-cyan animate-spin" />
-                                ) : (
-                                    <Icon className="w-10 h-10 text-green-400" />
-                                )}
+                        {/* Improved Spacing: Only show checkmark space when complete, otherwise minimal spacer */}
+                        {pct >= 95 ? (
+                            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+                                <CheckCircle2 className="w-12 h-12 text-green-400" aria-hidden />
                             </div>
-                        </div>
+                        ) : (
+                            <div className="h-2" />
+                        )}
 
-                        {/* Status Text */}
                         <div>
-                            <p className="text-xl font-semibold text-white">
-                                {currentStep.message}
-                            </p>
-                            <p className="text-white/50 text-sm mt-2">
-                                {currentStep.subtext}
-                            </p>
+                            <p className="text-xl font-semibold text-white">{displayMessage}</p>
                         </div>
 
-                        {/* Progress Steps */}
-                        <div className="flex justify-center gap-2 pt-4">
-                            {steps.slice(0, -1).map((_, i) => (
-                                <motion.div
-                                    key={i}
-                                    className={`h-1 rounded-full transition-all duration-300 ${i <= step
-                                            ? 'w-8 bg-neon-cyan'
-                                            : 'w-4 bg-white/20'
-                                        }`}
-                                    animate={i === step ? { opacity: [0.5, 1, 0.5] } : {}}
-                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                />
-                            ))}
+                        {/* Progress bar: visible track + filled bar */}
+                        <div className="w-full rounded-full h-3 overflow-hidden bg-white/15 border border-white/10 shadow-inner">
+                            <motion.div
+                                className="h-full rounded-full min-w-[4px] bg-neon-cyan shadow-[0_0_12px_rgba(34,211,238,0.5)]"
+                                initial={false}
+                                animate={{ width: `${Math.max(2, pct)}%` }}
+                                transition={{ duration: 0.5, ease: 'easeOut' }}
+                            />
                         </div>
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-white/50">{displaySubtext}</span>
+                            <span className="text-neon-cyan font-semibold tabular-nums">{Math.round(pct)}%</span>
+                        </div>
+                        {isAnalysisStalled && (
+                            <p className="text-white/40 text-xs">This step can take a minute—LLM is synthesizing narratives.</p>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
