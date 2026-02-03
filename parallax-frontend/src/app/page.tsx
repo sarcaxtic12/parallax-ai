@@ -122,13 +122,16 @@ export default function HomePage() {
                                 </div>
                             </form>
 
-                            {analyzeMutation.isPending && (
+                            {(analyzeMutation.isPending || analyzeMutation.isError) && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     className="mt-12"
                                 >
-                                    <LoadingAnimation step={loadingStep} />
+                                    <LoadingAnimation
+                                        step={loadingStep}
+                                        error={analyzeMutation.isError ? analyzeMutation.error?.message : null}
+                                    />
                                 </motion.div>
                             )}
                         </div>

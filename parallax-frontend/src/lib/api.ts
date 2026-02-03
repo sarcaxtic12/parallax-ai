@@ -50,8 +50,12 @@ export async function analyzeTopic(topic: string): Promise<AnalysisResponse> {
     })
 
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ detail: 'Analysis failed' }))
-        throw new Error(error.detail || 'Analysis failed')
+        const fallback =
+            response.status === 502 || response.status === 503
+                ? 'Service temporarily unavailable. Please try again in a minute.'
+                : 'Analysis failed'
+        const error = await response.json().catch(() => ({ detail: fallback }))
+        throw new Error(error.detail || fallback)
     }
 
     return response.json()

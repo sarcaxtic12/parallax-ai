@@ -1,7 +1,7 @@
 services:
-  # 1. The Python Agent (Streamlit Frontend + Logic)
+  # 1. Python Agent (API + analysis)
   - type: web
-    name: parallax-agent
+    name: agent
     env: docker
     dockerContext: ./py-agent
     dockerfilePath: ./py-agent/Dockerfile
@@ -12,21 +12,20 @@ services:
       - key: GO_SCRAPER_HOST
         fromService:
           type: web
-          name: parallax-scraper
+          name: scraper
           property: host
-      # Note: host returns the full public hostname like parallax-scraper-xxxx.onrender.com
       - key: DATABASE_URL
         fromDatabase:
-          name: parallax-db
+          name: db
           property: connectionString
       - key: GROQ_API_KEY
         sync: false
       - key: SERP_API_KEY
         sync: false
 
-  # 2. The Go Scraper (Backend Service)
+  # 2. Go Scraper
   - type: web
-    name: parallax-scraper
+    name: scraper
     env: docker
     dockerContext: ./go-scraper
     dockerfilePath: ./go-scraper/Dockerfile
@@ -35,7 +34,7 @@ services:
       - key: PORT
         value: 8080
 
-  # 3. Next.js Frontend
+  # 3. Next.js Frontend (main site)
   - type: web
     name: parallax
     env: docker
@@ -44,11 +43,11 @@ services:
     plan: free
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://YOUR_BACKEND_URL.onrender.com # IMPORTANT: Update this in Render Dashboard after deploying the agent
+        value: https://agent.onrender.com
 
 databases:
-  # 4. Managed Postgres Database
-  - name: parallax-db
+  # 4. Postgres
+  - name: db
     databaseName: parallax_core
     user: parallax_user
     plan: free

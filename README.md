@@ -75,7 +75,7 @@ You will need Docker Desktop installed to run this project. You also need API ke
    GROQ_API_KEY=your_groq_key
    SERP_API_KEY=your_serp_key
    DATABASE_URL=postgresql://parallax_user:parallax_pass@db:5432/parallax_core
-   GO_SCRAPER_URL=http://go-scraper:8080/scrape
+   GO_SCRAPER_URL=http://scraper:8080/scrape
    ```
 
 3. **Run with Docker Compose**
@@ -113,5 +113,14 @@ If you want to use the API directly, here are the main endpoints:
 
 ## Deployment
 
-The project is configured to run on Render using the `render.yaml` file. It sets up the database and all three services automatically.
+The project is configured to run on Render using the `render.yaml` file. It sets up the database and all services with short, consistent names:
+
+| Service   | Name      | Role                          |
+|----------|-----------|-------------------------------|
+| Frontend | `parallax`| Next.js site (main URL)      |
+| API      | `agent`   | Python FastAPI + analysis     |
+| Scraper  | `scraper` | Go scraping microservice      |
+| Database | `db`      | PostgreSQL                    |
+
+Set `NEXT_PUBLIC_API_URL` for the **parallax** service to your agent URL (e.g. `https://agent.onrender.com`) if Render adds a suffix to the hostname.
 

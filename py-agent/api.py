@@ -196,8 +196,8 @@ async def analyze_topic(request: AnalyzeRequest):
         
         if not articles:
             raise HTTPException(
-                status_code=502, 
-                detail="Failed to extract content from sources"
+                status_code=503,
+                detail="Could not fetch article content. The scraper may be starting up—please try again in a minute."
             )
         
         # Step 3: Run LLM analysis
