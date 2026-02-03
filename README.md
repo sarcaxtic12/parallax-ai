@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-Parallax AI is a distributed research system designed to quantify and visualize media bias in real-time. In the current information landscape, news outlets often present conflicting realities of the same event—a phenomenon I call the "Parallax Gap." This project closes that gap by deploying an autonomous AI agent to read, parse, and cross-reference reporting from the Left, Center, and Right.
+Parallax AI is a distributed research system designed to quantify and visualize media bias in real-time. In the current information landscape, news outlets often present conflicting realities of the same event, a phenomenon I call the "Parallax Gap." This project closes that gap by deploying an autonomous AI agent to read, parse, and cross-reference reporting from the Left, Center, and Right.
 
 Unlike simple summarization tools, Parallax AI performs **comparative narrative analysis**. It doesn't just tell you what happened; it tells you what each side is *ignoring*, effectively automating the workload of a media analyst. By analyzing omissions and framing differences, it provides a comprehensive, synthesized view of the truth that no single source offers.
 
@@ -31,7 +31,7 @@ The "Initiate Research" action triggers a multi-step autonomous workflow:
 1.  **Semantic Discovery**: The agent queries the Google News API (via SerpAPI) to identify high-authority sources across the political spectrum.
 2.  **Content Extraction**: The Go service strips boilerplate (ads, navbars) using custom heuristics to maximize the "signal-to-noise" ratio for the LLM's context window.
 3.  **Bias Classification**: Before analysis, the system classifies the political lean of each source using a zero-shot classification step, ensuring the final report is balanced.
-4.  **Narrative Synthesis**: The core innovation. The model is prompted to perform "Narrative Extraction"—identifying the coherent story being told by a cluster of articles—rather than simple summarization.
+4.  **Narrative Synthesis**: The core innovation. The model is prompted to perform "Narrative Extraction", identifying the coherent story being told by a cluster of articles, rather than simple summarization.
 
 ### 3. Real-Time Event Streaming (SSE)
 To prevent the "black box" delay common in AI apps, I implemented **Server-Sent Events (SSE)**. The backend pushes granular status updates ("Scraping CNN...", "Synthesizing Left Narrative...") to the frontend. This keeps the user engaged during the 15-30 second analysis window and provides immediate feedback on the agent's "thought process."
