@@ -2,10 +2,13 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-production-success.svg)
-![Go](https://img.shields.io/badge/backend-Go-00ADD8.svg?logo=go&logoColor=white)
-![Python](https://img.shields.io/badge/agent-Python-3776AB.svg?logo=python&logoColor=white)
-![Next.js](https://img.shields.io/badge/frontend-Next.js-black.svg?logo=next.js&logoColor=white)
+![Go](https://img.shields.io/badge/backend-Go_1.21-00ADD8.svg?logo=go&logoColor=white)
+![Python](https://img.shields.io/badge/agent-Python_3.11-3776AB.svg?logo=python&logoColor=white)
+![Next.js](https://img.shields.io/badge/frontend-Next.js_14-black.svg?logo=next.js&logoColor=white)
 ![Docker](https://img.shields.io/badge/container-Docker-2496ED.svg?logo=docker&logoColor=white)
+![Repo Size](https://img.shields.io/github/repo-size/yourusername/parallax-ai)
+![Issues](https://img.shields.io/github/issues/yourusername/parallax-ai)
+![Stars](https://img.shields.io/github/stars/yourusername/parallax-ai?style=social)
 
 **Autonomous Narrative Intelligence & Media Bias Analysis Platform**
 
@@ -13,9 +16,9 @@
 
 Parallax AI is a distributed research system designed to quantify and visualize media bias in real-time. In the current information landscape, news outlets often present conflicting realities of the same event, a phenomenon I call the "Parallax Gap." This project closes that gap by deploying an autonomous AI agent to read, parse, and cross-reference reporting from the Left, Center, and Right.
 
-Unlike simple summarization tools, Parallax AI performs **comparative narrative analysis**. It doesn't just tell you what happened; it tells you what each side is *ignoring*, effectively automating the workload of a media analyst. By analyzing omissions and framing differences, it provides a comprehensive, synthesized view of the truth that no single source offers.
+Unlike simple summarization tools, Parallax AI performs **comparative narrative analysis**, generating detailed **600-900 word reports** that deep-dive into the nuances of coverage. It doesn't just tell you what happened; it tells you what each side is *ignoring*, effectively automating the workload of a media analyst. By analyzing omissions and framing differences, it provides a comprehensive, synthesized view of the truth that no single source offers.
 
-The system is built on a production-grade microservices architecture, utilizing **Go** for high-throughput data ingestion and **Python** for complex cognitive processing, all streamed to a **Next.js** client via Server-Sent Events (SSE).
+The system is built on a production-grade microservices architecture, utilizing **Go** for high-throughput data ingestion from **~16 cross-spectrum sources** and **Python** for complex cognitive processing, all streamed to a **Next.js** client via Server-Sent Events (SSE).
 
 ## Technical Architecture & Engineering Decisions
 
@@ -23,7 +26,7 @@ I architected the system to balance two competing needs: the raw I/O speed requi
 
 ### 1. Hybrid Microservices Strategy
 Instead of a monolithic application, I decoupled the scraping logic from the analysis logic.
-*   **The Ingestion Engine (Go/Gin)**: Web scraping is an I/O-bound task that benefits heavily from concurrency. I built the scraper in Go to leverage **Goroutines**, allowing the system to fetch, clean, and normalize HTML from 15+ sources in parallel with near-zero overhead. A Python equivalent would have struggled with the Global Interpreter Lock (GIL) under this specific load.
+*   **The Ingestion Engine (Go/Gin)**: Web scraping is an I/O-bound task that benefits heavily from concurrency. I built the scraper in Go to leverage **Goroutines**, allowing the system to fetch, clean, and normalize HTML from **16+ sources** in parallel with near-zero overhead. A Python equivalent would have struggled with the Global Interpreter Lock (GIL) under this specific load.
 *   **The Cognitive Core (Python/FastAPI)**: complex text processing and LLM orchestration are best handled in Python. This service acts as the controller, managing the Retrieval Augmented Generation (RAG) pipeline, prompt engineering, and context window management for the Llama 3 model.
 
 ### 2. Retrieval & Synthesis Pipeline (RAG)

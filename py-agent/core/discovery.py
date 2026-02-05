@@ -89,4 +89,4 @@ def get_news_urls(topic, api_key=None):
             unique_urls.append(url)
             seen.add(url)
             
-    return unique_urls[:18] # Cap at 18 as requested
+    return unique_urls[:16] # Cap at 16 as requested

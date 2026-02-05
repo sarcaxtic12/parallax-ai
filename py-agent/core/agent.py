@@ -68,7 +68,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
         "You are a senior political analyst writing a balanced briefing on: **'{topic}'**.\n\n"
         "**Left-Wing Perspective:**\n{left_narrative}\n\n"
         "**Right-Wing Perspective:**\n{right_narrative}\n\n"
-        "**Write a comprehensive analysis (300-500 words) that:**\n"
+        "**Write a comprehensive analysis (600-900 words) that:**\n"
         "1. **Opens with substance**: Start with a key fact, statistic, or concrete event. NO generic openers like 'The topic of...' or 'There has been significant debate...'\n"
         "2. **Answers the question**: If '{topic}' is a question (e.g., 'Is X happening?'), provide a DIRECT ANSWER based on the evidence, then explain.\n"
         "3. **Compares perspectives**: Explain what each side emphasizes and WHY they frame it that way.\n"
