@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from core.database import init_db, AnalysisResult, get_db_engine
 
-# basic structure for the output
+# Structure for the analysis output
 class ArticleAnalysis(BaseModel):
     bias: str = Field(description="Political bias: 'Left', 'Center', or 'Right'")
     summary: str = Field(description="A one-sentence summary of the article")
@@ -25,8 +25,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
     # Ensure DB tables exist
     init_db()
     
-    # setting up the llms
-    # need GROQ_API_KEY for this
+    # Initialize LLMs
     
     # Synthesis Model (Maverick - Enhanced Synthesis, good for longer outputs)
     llm_synthesis = ChatGroq(model_name="meta-llama/llama-4-maverick-17b-128e-instruct", temperature=0.3)
@@ -37,7 +36,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
     # Classification Model B
     llm_processing_b = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
 
-    # first chain: checking the bias of each valid article
+    # Chain 1: Determine bias and summary for each article
     classifier_prompt = ChatPromptTemplate.from_template(
         "Analyze the following article text with high precision. Determine its political bias (Left, Center, or Right) "
         "and provide a nuanced one-sentence summary that captures the core argument.\n\n"
@@ -50,7 +49,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
     chain_a = classifier_prompt | llm_processing_a.with_structured_output(ArticleAnalysis)
     chain_b = classifier_prompt | llm_processing_b.with_structured_output(ArticleAnalysis)
 
-    # second chain: summarizing the narratives
+    # Chain 2: Synthesize narratives from clustered summaries
     synthesizer_prompt = ChatPromptTemplate.from_template(
         "You are an expert political analyst. Synthesize the **{bias}** perspective on: **'{topic}'**.\n\n"
         "**Source Summaries:**\n{summaries}\n\n"
@@ -63,7 +62,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
     )
     synthesizer_chain = synthesizer_prompt | llm_synthesis | StrOutputParser()
 
-    # third chain: generating the final report
+    # Chain 3: Generate the final comparative report
     omission_prompt = ChatPromptTemplate.from_template(
         "You are a senior political analyst writing a balanced briefing on: **'{topic}'**.\n\n"
         "**Left-Wing Perspective:**\n{left_narrative}\n\n"
@@ -78,9 +77,9 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
     )
     omission_chain = omission_prompt | llm_synthesis | StrOutputParser()
 
-    # here's where we actually run everything
+    # Main execution logic
     
-    # 1. classify all the articles (splitting them up for speed)
+    # Run classification on all articles (parallelized)
     results = []
     
     # Initialize DB Engine (Once)
@@ -101,7 +100,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
     print(f"DEBUG: Processing {len(batch_a)} + {len(batch_b)} articles.")
 
     def process_article(article, chain, model_name):
-        # check if we already did this one
+        # Check semantic cache first
         try:
             with Session(engine) as session:
                 stmt = select(AnalysisResult).where(AnalysisResult.url == article.get("url"))
@@ -119,13 +118,13 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
         except Exception as e:
             print(f"DEBUG: Cache lookup failed: {e}")
 
-        # otherwise run the analysis
+        # Run analysis if not cached
         try:
             print(f"DEBUG: Running Analysis ({model_name}) for {article.get('url')}")
             # Add timeout/retry logic implicitly via LangChain or just try/except
             analysis = chain.invoke({"text": article["text"]})
             
-            # save it for later
+            # Persist to DB
             try:
                 with Session(engine) as session:
                     # Check if exists again to avoid race conditions
@@ -153,8 +152,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
             print(f"DEBUG: LLM Analysis failed ({model_name}) for {article.get('url')}: {e}")
             return None
 
-    # using a threadpool to speed things up
-    # 5 workers seems to be the sweet spot
+    # Use a threadpool to speed up processing
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         
@@ -186,7 +184,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
             bias_counts.setdefault("Center", 0)
             bias_counts["Center"] += 1
 
-    # 2. combine everything into narratives
+    # Synthesize narratives
     narratives = {}
     for bias in ["Left", "Right"]:
         summaries = grouped_summaries.get(bias, [])
@@ -195,7 +193,7 @@ def run_full_analysis(topic: str, articles: List[Dict[str, Any]]) -> Dict[str, A
         else:
             narratives[bias] = "No articles found for this perspective."
 
-    # 3. find what's missing
+    # Run narrative gap analysis
     left_narrative = narratives.get("Left", "")
     right_narrative = narratives.get("Right", "")
     

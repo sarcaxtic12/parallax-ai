@@ -36,7 +36,7 @@ func main() {
 			}(u)
 		}
 
-		// wait for everything to finish
+		// Wait for all workers to complete
 		wg.Wait()
 		close(resultsCh)
 

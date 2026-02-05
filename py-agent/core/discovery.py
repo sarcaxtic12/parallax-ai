@@ -16,7 +16,7 @@ def generate_search_queries(topic: str, api_key: str = None) -> list:
         return [f'"{topic}" news', f'"{topic}" analysis']
 
     try:
-        # using the big model to get the best search terms
+        # Use 70B for higher quality quality query generation
         llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0.7, groq_api_key=api_key)
         
         prompt = ChatPromptTemplate.from_template(
@@ -58,7 +58,7 @@ def get_news_urls(topic, api_key=None):
     
     collected_urls = []
     
-    # aiming for around 16 links total
+    # Target ~16 sources total (approx 4 per query)
     for i, q in enumerate(queries):
         params = {
             "engine": "google_news",
@@ -73,7 +73,7 @@ def get_news_urls(topic, api_key=None):
             results = search.get_dict()
             news_results = results.get("news_results", [])
             
-            # taking the top 5 from each query
+            # Take top 5 from this query to ensure diversity
             side_urls = [item.get("link") for item in news_results if "link" in item]
             collected_urls.extend(side_urls[:5])
             
@@ -81,7 +81,7 @@ def get_news_urls(topic, api_key=None):
             print(f"Error fetching news from SerpAPI for query '{q}': {e}")
             continue
 
-    # removing duplicates
+    # Deduplicate URLs
     seen = set()
     unique_urls = []
     for url in collected_urls:
