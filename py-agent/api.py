@@ -27,7 +27,6 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    # Allow all origins for the hackathon/demo
     allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
