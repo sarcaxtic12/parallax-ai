@@ -7,7 +7,6 @@
 ![Next.js](https://img.shields.io/badge/frontend-Next.js_14-black.svg?logo=next.js&logoColor=white)
 ![Docker](https://img.shields.io/badge/container-Docker-2496ED.svg?logo=docker&logoColor=white)
 ![Repo Size](https://img.shields.io/github/repo-size/yourusername/parallax-ai)
-![Issues](https://img.shields.io/github/issues/yourusername/parallax-ai)
 ![Stars](https://img.shields.io/github/stars/yourusername/parallax-ai?style=social)
 
 **Autonomous Narrative Intelligence & Media Bias Analysis Platform**
@@ -26,7 +25,7 @@ I architected the system to balance two competing needs: the raw I/O speed requi
 
 ### 1. Hybrid Microservices Strategy
 Instead of a monolithic application, I decoupled the scraping logic from the analysis logic.
-*   **The Ingestion Engine (Go/Gin)**: Web scraping is an I/O-bound task that benefits heavily from concurrency. I built the scraper in Go to leverage **Goroutines**, allowing the system to fetch, clean, and normalize HTML from **16+ sources** in parallel with near-zero overhead. A Python equivalent would have struggled with the Global Interpreter Lock (GIL) under this specific load.
+*   **The Ingestion Engine (Go/Gin)**: Web scraping is an I/O-bound task that benefits heavily from concurrency. I built the scraper in Go to leverage **Goroutines**, allowing the system to fetch, clean, and normalize HTML from **~16 sources** in parallel with near-zero overhead. A Python equivalent would have struggled with the Global Interpreter Lock (GIL) under this specific load.
 *   **The Cognitive Core (Python/FastAPI)**: complex text processing and LLM orchestration are best handled in Python. This service acts as the controller, managing the Retrieval Augmented Generation (RAG) pipeline, prompt engineering, and context window management for the Llama 3 model.
 
 ### 2. Retrieval & Synthesis Pipeline (RAG)

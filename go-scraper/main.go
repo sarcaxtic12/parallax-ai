@@ -36,7 +36,7 @@ func main() {
 			}(u)
 		}
 
-		// Wait for all goroutines to finish
+		// wait for everything to finish
 		wg.Wait()
 		close(resultsCh)
 

@@ -1,6 +1,6 @@
 """
-FastAPI Backend API for Parallax AI Frontend
-Wraps existing Python agent functions for REST consumption
+Backend API for the Parallax frontend.
+Wraps the agent functionality so it can be called via REST.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -27,7 +27,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    # Allow all origins for the hackathon/demo context, but disable credentials to be spec-compliant
+    # Allow all origins for the hackathon/demo
     allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
@@ -41,10 +41,10 @@ async def root():
     return {"message": "Parallax AI Agent API is running", "docs": "/docs"}
 
 
-# Global DB Engine
+# Database setup
 engine = get_db_engine()
 
-# Request/Response Models
+# Data models
 class AnalyzeRequest(BaseModel):
     topic: str
 
@@ -105,7 +105,7 @@ class ChatResponse(BaseModel):
     answer: str
 
 
-# Endpoints
+# API Endpoints
 @app.on_event("startup")
 async def startup_event():
     from core.database import init_db
@@ -172,7 +172,7 @@ async def get_history():
 async def analyze_topic(request: AnalyzeRequest):
     """
     Main analysis endpoint.
-    Orchestrates: Discovery -> Scraping -> Analysis
+    Runs the full pipeline: Discovery -> Scraping -> Analysis
     """
     topic = request.topic.strip()
     
@@ -190,8 +190,7 @@ async def analyze_topic(request: AnalyzeRequest):
         )
     
     try:
-        # Step 1: Discover news URLs
-        # Note: get_news_urls now runs balanced search (approx 14 urls)
+        # Step 1: Find relevant news sources
         urls = get_news_urls(topic, serp_key)
         
         if not urls:
@@ -200,7 +199,7 @@ async def analyze_topic(request: AnalyzeRequest):
                 detail="No relevant sources found for this topic"
             )
         
-        # Step 2: Scrape articles via Go microservice
+        # Step 2: Scrape article content
         articles = fetch_articles(urls)
         
         if not articles:
@@ -209,7 +208,7 @@ async def analyze_topic(request: AnalyzeRequest):
                 detail="Could not fetch article content. The scraper may be starting up—please try again in a minute."
             )
         
-        # Step 3: Run LLM analysis
+        # Step 3: Run the execution pipeline
         analysis_results = run_full_analysis(topic, articles)
         
         # Format response
