@@ -6,8 +6,6 @@
 ![Python](https://img.shields.io/badge/agent-Python_3.11-3776AB.svg?logo=python&logoColor=white)
 ![Next.js](https://img.shields.io/badge/frontend-Next.js_14-black.svg?logo=next.js&logoColor=white)
 ![Docker](https://img.shields.io/badge/container-Docker-2496ED.svg?logo=docker&logoColor=white)
-![Repo Size](https://img.shields.io/github/repo-size/yourusername/parallax-ai)
-![Stars](https://img.shields.io/github/stars/yourusername/parallax-ai?style=social)
 
 **Autonomous Narrative Intelligence & Media Bias Analysis Platform**
 
